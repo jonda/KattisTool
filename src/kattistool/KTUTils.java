@@ -28,21 +28,21 @@ public class KTUTils {
         return fileName;
     }
 
-    static String replace(String code, final String regExp, final String replacement) {
+    public static String replace(String code, final String regExp, final String replacement) {
         Pattern p = Pattern.compile(regExp); //"int\\s*\\("
         //code = code.replaceAll(regEx, "Integer.pareInt(\"\"+");
-        
+
 //        if(code.contains("println")){
 //            debug("---------------\nprintln på raden code: '"+code+"', regExp: "+regExp+ ", replacement: "+replacement);
 //            
 //        }
         Matcher m = p.matcher(code);
         while (m.find()) {
-            debug("Subsequence "+regExp+" found");
+            debug("Subsequence " + regExp + " found");
             String res = m.group();
-            debug("res = '" + res+"' codeBefore"+code);
-            code = code.replace(res, res.charAt(0)+replacement);
-            debug("---------------\ncode: '"+code+"', regExp: "+regExp+ ", replacement: "+replacement);
+            debug("res = '" + res + "' codeBefore" + code);
+            code = code.replace(res, res.charAt(0) + replacement);
+            debug("---------------\ncode: '" + code + "', regExp: " + regExp + ", replacement: " + replacement);
 
         }
         debug("No more found");
@@ -101,19 +101,25 @@ public class KTUTils {
 
     public static boolean saveJavaFile(String fileName, String content) {
         String destDir = getKattisSaveDir();
+
         return saveIfDirExists(fileName, destDir, content, ".java");
     }
 
     public static String getKattisSaveDir() {
+        String destDir = getKattisProjectDir();
+        if (new File(destDir, "src").exists()) {
+            destDir = destDir + File.separator + "src";
+        }
+        return destDir;
+    }
+
+    public static String getKattisProjectDir() {
         String destDir = getNetbeansProjectDir() + File.separator + "Kattis";
         return destDir;
     }
 
     public static boolean saveIfDirExists(String fileName, String destDir, String content, String extention) {
         if (new File(destDir).exists()) {
-            if (new File(destDir, "src").exists()) {
-                destDir = destDir + File.separator + "src";
-            }
             if (extention != null) {
                 if (!extention.contains(".")) {
                     extention = "." + extention;
@@ -173,8 +179,7 @@ public class KTUTils {
                 if (c == '"') {
                     inQuote = true;
 
-                }
-                else if(c == ','){
+                } else if (c == ',') {
                     return true;
                 }
             }

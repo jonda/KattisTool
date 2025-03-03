@@ -61,11 +61,11 @@ public class KattisTool extends JFrame implements Tool {
             outTextArea.setText(code);
             boolean saved = KTUTils.saveJavaFile(fileName, code);
             if (saved) {
-                KTUTils.debug("Sparad i mappen " + KTUTils.getKattisSaveDir());
+                KTUTils.debug("Sparad i mappen " + KTUTils.getKattisProjectDir());
                 status.setText("Sparad i mappen " + KTUTils.getKattisSaveDir());
             } else {
-                KTUTils.debug("Skapa projektet " + KTUTils.getKattisSaveDir() + " så sparas javafilen där");
-                status.setText("Skapa projektet " + KTUTils.getKattisSaveDir() + " så sparas javafilen där");
+                KTUTils.debug("Skapa projektet " + KTUTils.getKattisProjectDir() + " så sparas javafilen där");
+                status.setText("Skapa projektet " + KTUTils.getKattisProjectDir() + " så sparas javafilen där");
             }
         }
     }
@@ -91,8 +91,6 @@ public class KattisTool extends JFrame implements Tool {
     public String getMenuTitle() {
         return "Kattis Tool for processing";
     }
-
-
 
     static String getExtraCode(String[][] extraFuncArr, String org) {
         KTUTils.debug("org = " + org);
@@ -176,8 +174,7 @@ public class KattisTool extends JFrame implements Tool {
 //        }
 //        return rows;
 //    }
-
-    private static String replaceFunctions(String[][] replaceFunc,String code) {
+    private static String replaceFunctions(String[][] replaceFunc, String code) {
         for (int i = 0; i < replaceFunc.length; i++) {
             String[] row = replaceFunc[i];
             if (row != null) {
@@ -189,40 +186,42 @@ public class KattisTool extends JFrame implements Tool {
     }
 
     public static String proc2Java(String fileName, String procCode) {
-    String[][] extraFuncArr = {
-        {"println",
-            "    static void println(Object... inp) {\n"
-            + "        for (int i = 0; i < inp.length; i++) {\n"
-            + "            Object object = inp[i];\n"
-            + "            System.out.print(object);\n"
-            + "        }\n"
-            + "        System.out.println();\n"
-            + "    }\n"
-            + ""},
-        {"print",
-            "    static void print(Object... inp) {\n"
-            + "        for (int i = 0; i < inp.length; i++) {\n"
-            + "            Object object = inp[i];\n"
-            + "            System.out.print(object);\n"
-            + "        }\n"
-            + "    }\n"
-            + ""},
-        {"int", "    public static int intConv(String tal){return Integer.parseInt(tal);}\n"
-            + "    public static int intConv(double tal){ return (int) tal;}\n"
-            + " "}
+        String[][] extraFuncArr = {
+            {"println",
+                "    static void println(Object... inp) {\n"
+                + "        for (int i = 0; i < inp.length; i++) {\n"
+                + "            Object object = inp[i];\n"
+                + "            System.out.print(object);\n"
+                + "        }\n"
+                + "        System.out.println();\n"
+                + "    }\n"
+                + ""},
+            {"print",
+                "    static void print(Object... inp) {\n"
+                + "        for (int i = 0; i < inp.length; i++) {\n"
+                + "            Object object = inp[i];\n"
+                + "            System.out.print(object);\n"
+                + "        }\n"
+                + "    }\n"
+                + ""},
+            {"int", "    public static int intConv(String tal){return Integer.parseInt(tal);}\n"
+                + "    public static int intConv(double tal){ return (int) tal;}\n"
+                + " "}
 
-    };
+        };
 
-    String[][] replaceFunc = {
-        {"println", "System.out.println"},
-        {"int", "intConv"},
-        {"double", "Double.parseDouble"},
-        {"float", "Float.parseFloat"}
-    };        
+        String[][] replaceFunc = {
+            {"println", "System.out.println"},
+            {"int", "intConv"},
+            {"double", "Double.parseDouble"},
+            {"float", "Float.parseFloat"}
+        };
         String className = KTUTils.removeExtension(fileName, ".pde");
         String importString = "";
         String javaCode = "";
         boolean noSetup = true;
+        boolean jOptionPaneExists = false;
+        boolean scannerExists = false;
         Pattern p = Pattern.compile("\\s*void\\s+setup\\s*\\(\\s*\\)\\s*\\{.*");
         Matcher m = p.matcher(javaCode);
 
@@ -252,6 +251,9 @@ public class KattisTool extends JFrame implements Tool {
                     }
                 }
             }
+            if (row.contains("Scanner")) {
+                scannerExists = true;
+            }
             rows[i] = row;
         }
         KTUTils.debug("printlnWithComma = " + printlnWithComma);
@@ -270,10 +272,13 @@ public class KattisTool extends JFrame implements Tool {
         //rows = replaceFunctions(rows);
         String extraCode = "\n" + getExtraCode(extraFuncArr, procCode);
 
+        if(!scannerExists){
+            importString += "import java.util.*;\n";
+        }
         for (int i = 0; i < rows.length; i++) {
             String row = rows[i];
             if (row.trim().startsWith("import ")) {
-                if (!row.contains("longinput.")) {
+                if (!row.contains("longinput.") && !row.contains("import javax.swing.JOptionPane;")) {
                     importString += row + "\n";
                 }
                 row = null;
@@ -299,6 +304,15 @@ public class KattisTool extends JFrame implements Tool {
                     }
                 }
             }
+            if (row!=null && row.contains("JOptionPane.showInputDialog")) {
+                jOptionPaneExists = true;
+                row = KTUTils.replace(row,"[^\\w\\.]JOptionPane.showInputDialogs*\\(.*\\)" , "scan.nextLine()");
+                if(!scannerExists){
+                    row = "        Scanner scan = new Scanner(System.in);\n"+row;
+                    scannerExists = true;
+                }
+            }
+
             rows[i] = row;
         }
         String mainStart = "";
@@ -308,12 +322,11 @@ public class KattisTool extends JFrame implements Tool {
             mainEnd = "    }\n";
         }
 
-                //rows = replaceFunctions(rows);
-
+        //rows = replaceFunctions(rows);
         KTUTils.debug("extraCode = '" + extraCode + "'");
         javaCode = KTUTils.joinAndRemoveNull(rows);
         KTUTils.debug("javaCode = " + javaCode);
-        javaCode = replaceFunctions(replaceFunc,javaCode);
+        javaCode = replaceFunctions(replaceFunc, javaCode);
 
         javaCode = importString + "\n"
                 + "public class " + className + "{\n" + mainStart + javaCode
@@ -333,6 +346,7 @@ public class KattisTool extends JFrame implements Tool {
         System.out.println();
         //String[] stringArray = Arrays.copyOf(inp, inp.length, String[].class);
         //System.out.println(String.join("\n", stringArray));
+        //JOptionPane.showInputDialog("");
 
     }
 
