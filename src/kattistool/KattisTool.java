@@ -3,6 +3,7 @@ package kattistool;
 import java.awt.BorderLayout;
 import java.awt.Font;
 import java.awt.TextArea;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -122,47 +123,67 @@ public class KattisTool extends JFrame implements Tool {
 //            + "        System.out.println();\n"
 //            + "    }\n\n";
     public static void main(String[] args) {
-        String code
-                = "import java.util.*;\n"
-                + "import longinput.*;\n"
-                + "\n"
-                + "//Lite kommentarer\n"
-                + "void setup(){\n"
-                + "  Scanner scan = new Scanner(LongInput.input());\n"
-                + "  String inputStr = scan.next();\n"
-                + "  int input =int(inputStr);\n"
-                + "  float decinput =float(inputStr);\n"
-                + "  double ddecinput =double(inputStr);\n"
-                + "  if(isEven(input)){\n"
-                + "    println(\"Bob\",8);\n"
-                + "  }\n"
-                + "  else {\n"
-                + "    println(\"Alice\");\n"
-                + "  }    \n"
-                + "}\n"
-                + "\n"
-                + "\n"
-                + "boolean isEven(int num){\n"
-                + "  boolean retVal;\n"
-                + "  retVal = num % 2 == 0;\n"
-                + "  return retVal;\n"
-                + "}\n"
-                + ""; // TODO code application logic here
-        String fileName = "TakeTwoStones.pde";
-        StringBuilder sb = new StringBuilder();
-        final String javaCode = proc2Java(fileName, code);
+//        String code
+//                = "import java.util.*;\n"
+//                + "import longinput.*;\n"
+//                + "\n"
+//                + "//Lite kommentarer\n"
+//                + "void setup(){\n"
+//                + "  Scanner scan = new Scanner(LongInput.input());\n"
+//                + "  String inputStr = scan.next();\n"
+//                + "  int input =int(inputStr);\n"
+//                + "  float decinput =float(inputStr);\n"
+//                + "  double ddecinput =double(inputStr);\n"
+//                + "  if(isEven(input)){\n"
+//                + "    println(\"Bob\",8);\n"
+//                + "  }\n"
+//                + "  else {\n"
+//                + "    println(\"Alice\");\n"
+//                + "  }    \n"
+//                + "}\n"
+//                + "\n"
+//                + "\n"
+//                + "boolean isEven(int num){\n"
+//                + "  boolean retVal;\n"
+//                + "  retVal = num % 2 == 0;\n"
+//                + "  return retVal;\n"
+//                + "}\n"
+//                + ""; // TODO code application logic here
+//        String fileName = "TakeTwoStones.pde";
+//        //StringBuilder sb = new StringBuilder();
+//        final String javaCode = proc2Java(fileName, code);
+//
+//        //println(javaCode);
+//        KattisTool kt = new KattisTool();
+//        kt.setVisible(true);
+//        kt.outTextArea.setText(javaCode);
 
-        //println(javaCode);
-        KattisTool kt = new KattisTool();
-        kt.setVisible(true);
-        kt.outTextArea.setText(javaCode);
-
+        System.out.println(replaceTextFunction("   text(\"Hej alla barn\", 34, 56);"));
+        System.out.println(replaceTextFunction("   text(abc, 34, 56);"));
+        System.out.println(replaceTextFunction("   text(\"Hej vita grisar som leker\", 34, 56, 100, 5000);"));
     }
 
     private static String replaceMisc(String code) {
         return KTUTils.replace(code, "[^\\w\\.]LongInput\\.input\\s*\\(\\s*\\)", "System.in");
     }
 
+    private static String replaceTextFunction(String row) {
+        KTUTils.debug("-> replaceTextFunction row = " + row);
+        int start = row.indexOf("text(");
+        //System.out.println("start = " + start);
+        //System.out.println("row.charAt(start - 1) = '" + row.charAt(start - 1)+"'");
+        if (start != -1) {
+            if (start == 0 || row.charAt(start - 1) == ' ') {
+                int end = row.indexOf(')');
+                //System.out.println("end = " + end);
+                ArrayList<Integer> commas = KTUTils.commasOutsideQuote(row.substring(start, end));
+                int comma = commas.get(0);
+                row = row.substring(0, start) + "System.out.println(" + row.substring(start + 5, start + comma) + row.substring(end);
+            }
+        }
+        KTUTils.debug("<- replaceTextFunction row = " + row);
+        return row;
+    }
 //    public static String replaceIntFunction(String code) {
 //        final String funktionsNamn = "int";
 //        return replaceFunction(funktionsNamn, "intConv", code);
@@ -174,11 +195,22 @@ public class KattisTool extends JFrame implements Tool {
 //        }
 //        return rows;
 //    }
+
     private static String replaceFunctions(String[][] replaceFunc, String code) {
         for (int i = 0; i < replaceFunc.length; i++) {
             String[] row = replaceFunc[i];
             if (row != null) {
                 code = KTUTils.replaceFunction(row[0], row[1], code);
+            }
+
+        }
+        return code;
+    }
+    private static String removeFunctions(String[] removeFunc, String code) {
+        for (int i = 0; i < removeFunc.length; i++) {
+            String row = removeFunc[i];
+            if (row != null) {
+                code = KTUTils.removeFunction(row,  code);
             }
 
         }
@@ -214,8 +246,11 @@ public class KattisTool extends JFrame implements Tool {
             {"println", "System.out.println"},
             {"int", "intConv"},
             {"double", "Double.parseDouble"},
-            {"float", "Float.parseFloat"}
+            {"float", "Double.parseDouble"}
+            //{"float", "Float.parseFloat"}
         };
+        
+        String[] removeFunc = {"fill", "background", "size", "stroke", "textSize"};
         String className = KTUTils.removeExtension(fileName, ".pde");
         String importString = "";
         String javaCode = "";
@@ -272,7 +307,7 @@ public class KattisTool extends JFrame implements Tool {
         //rows = replaceFunctions(rows);
         String extraCode = "\n" + getExtraCode(extraFuncArr, procCode);
 
-        if(!scannerExists){
+        if (!scannerExists) {
             importString += "import java.util.*;\n";
         }
         for (int i = 0; i < rows.length; i++) {
@@ -303,14 +338,15 @@ public class KattisTool extends JFrame implements Tool {
                         row = "    " + row;
                     }
                 }
-            }
-            if (row!=null && row.contains("JOptionPane.showInputDialog")) {
-                jOptionPaneExists = true;
-                row = KTUTils.replace(row,"[^\\w\\.]JOptionPane.showInputDialogs*\\(.*\\)" , "scan.nextLine()");
-                if(!scannerExists){
-                    row = "        Scanner scan = new Scanner(System.in);\n"+row;
-                    scannerExists = true;
+                if (row.contains("JOptionPane.showInputDialog")) {
+                    jOptionPaneExists = true;
+                    row = KTUTils.replace(row, "[^\\w\\.]JOptionPane.showInputDialogs*\\(.*\\)", "scan.nextLine()");
+                    if (!scannerExists) {
+                        row = "        Scanner scan = new Scanner(System.in);\n" + row;
+                        scannerExists = true;
+                    }
                 }
+                row = replaceTextFunction(row);
             }
 
             rows[i] = row;
@@ -327,6 +363,10 @@ public class KattisTool extends JFrame implements Tool {
         javaCode = KTUTils.joinAndRemoveNull(rows);
         KTUTils.debug("javaCode = " + javaCode);
         javaCode = replaceFunctions(replaceFunc, javaCode);
+        javaCode = removeFunctions(removeFunc, javaCode);
+        
+        javaCode = javaCode.replace(" float ", " double ");
+
 
         javaCode = importString + "\n"
                 + "public class " + className + "{\n" + mainStart + javaCode
@@ -348,6 +388,7 @@ public class KattisTool extends JFrame implements Tool {
         //System.out.println(String.join("\n", stringArray));
         //JOptionPane.showInputDialog("");
 
+        // text("hej alla barn", 34, 56);
     }
 
 }

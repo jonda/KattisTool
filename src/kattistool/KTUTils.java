@@ -7,6 +7,7 @@ package kattistool;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.swing.JFileChooser;
@@ -59,6 +60,13 @@ public class KTUTils {
     static String replaceFunction(final String funktionsNamn, String newName, String code) {
         final String regExp = "[^\\w\\.]" + funktionsNamn + "\\s*\\(";
         final String replacement = newName + "(";
+        return KTUTils.replace(code, regExp, replacement);
+    }
+
+    static String removeFunction(final String funktionsNamn, String code) {
+        final String regExp = "[^\\w\\.]" + funktionsNamn + "\\s*\\(.*\\);";
+        //System.out.println("regExp = " + regExp);
+        final String replacement = "";
         return KTUTils.replace(code, regExp, replacement);
     }
 
@@ -165,6 +173,9 @@ public class KTUTils {
         s = "println(\"Hej alla barn\",8)";
         System.out.println("s = " + s);
         System.out.println(isCommaOutsideQuote(s));
+        s = "void setup(){\n"
+                + "fill(0);";
+        System.out.println(removeFunction( "fill",s));
     }
 
     public static boolean isCommaOutsideQuote(String s) {
@@ -187,4 +198,24 @@ public class KTUTils {
         return false;
     }
 
+    public static ArrayList<Integer> commasOutsideQuote(String s) {
+        ArrayList<Integer> commas = new ArrayList(4);
+        boolean inQuote = false;
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (inQuote) {
+                if (c == '"') {
+                    inQuote = false;
+                }
+            } else {
+                if (c == '"') {
+                    inQuote = true;
+
+                } else if (c == ',') {
+                    commas.add(i);
+                }
+            }
+        }
+        return commas;
+    }
 }
